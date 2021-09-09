@@ -16,6 +16,9 @@ const example = async () => {
 
     const serviceFee = await client.getServiceFeeAmount();
     console.log(`service fee: Ð${serviceFee}`);
+
+    const txn = await client.queryTransactions("doge-node-alpha", 100, 0);
+    console.log(`txn: ${txn}`);
   } catch (error) {
     console.log(error);
   }

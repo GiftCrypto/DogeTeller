@@ -99,4 +99,25 @@ module.exports = class DogeNode {
       });
     });
   }
+
+  /**
+   * Fetches a specific number of records from a wallet account. The order of
+   * the array is the order in which the dogenode received the transaction
+   * @param {String} acct the account to fetch records for
+   * @param {Integer} count number of records to fetch
+   * @param {Integer} from number of records to skip over
+   * @return {Promise} resolves with array of transaction IDs
+   */
+  queryTransactions(acct, count, from) {
+    return new Promise((resolve, reject) => {
+      this.dogecoin.exec("listtransactions", acct, count, from, (err, data) => {
+        if (err) {
+          console.log(err);
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+  }
 };

@@ -5,9 +5,8 @@ const dogeNodeOptionsSchema = {
     "dogeHost": {"type": "string", "required": "tre"},
     "dogePass": {"type": "string"},
     "dogeUser": {"type": "string"},
-    "txnPollInterval": {"type": "number"},
   },
-  "required": ["dogeHost", "dogePass", "dogeUser", "txnPollInterval"],
+  "required": ["dogeHost", "dogePass", "dogeUser"],
 };
 
 const transferDataSchema = {
@@ -20,7 +19,19 @@ const transferDataSchema = {
   "required": ["address", "amount"],
 };
 
+const queryTransactions = {
+  "id": "/TransactionQuery",
+  "type": "object",
+  "properties": {
+    "account": {"type": "string"},
+    "records": {"type": "integer", "minimum": 1},
+    "skip": {"type": "integer", "minimum": 0},
+  },
+  "required": ["account", "records", "skip"],
+};
+
 module.exports = {
   transferDataSchema,
   dogeNodeOptionsSchema,
+  queryTransactions,
 };

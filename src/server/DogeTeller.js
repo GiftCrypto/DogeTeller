@@ -5,7 +5,7 @@ const cors = require("cors");
 const passport = require("passport");
 const APIKeyStrat = require("passport-headerapikey").HeaderAPIKeyStrategy;
 const Validator = require("jsonschema").Validator;
-const {transferDataSchema} = require("../common/Schemas");
+const {transferDataSchema, queryTransactions} = require("../common/Schemas");
 const errorMessages = require("./errorMessages");
 const rateLimit = require("express-rate-limit");
 require("dotenv").config();
@@ -53,7 +53,6 @@ const dogenode = new DogeNode({
   dogeUser: process.env.DOGE_TELLER_NODE_USER,
   dogePass: process.env.DOGE_TELLER_NODE_PASS,
   dogeHost: process.env.DOGE_TELLER_NODE_HOST,
-  txnPollInterval: 1000,
 });
 const walletAcct = process.env.DOGE_TELLER_NODE_ACCT;
 
@@ -167,6 +166,32 @@ app.get("/api/private/transferOut",
             }
           }
         }
+      }
+    }
+);
+
+app.get("/api/private/queryTransactions",
+    passport.authenticate("headerapikey", {session: false}),
+    async (req, res) => {
+      const params = {
+        account: req.query.account,
+        records: Number(req.query.records),
+        skip: Number(req.query.skip),
+      };
+      const validation = v.validate(params, queryTransactions);
+      if (!validation.valid) {
+        console.log(validation);
+        res.status(500).json({
+          err: errorMessages.BAD_ARGS,
+        });
+      } else {
+        const acct = params.account;
+        const count = params.records;
+        const from = params.skip;
+        const txns = await dogenode.queryTransactions(acct, count, from);
+        res.json({
+          msg: txns,
+        });
       }
     }
 );
