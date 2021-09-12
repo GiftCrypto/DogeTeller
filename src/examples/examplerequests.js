@@ -1,8 +1,9 @@
 const DogeTellerClient = require("../client/DogeTellerClient");
+require("dotenv").config();
 
 const client = new DogeTellerClient(
     "http://localhost:5000",
-    "<YOUR-API-KEY-GOES-HERE>"
+    process.env.DOGE_TELLER_API_SECRET
 );
 
 const example = async () => {
@@ -17,7 +18,8 @@ const example = async () => {
     const serviceFee = await client.getServiceFeeAmount();
     console.log(`service fee: Ð${serviceFee}`);
 
-    const txn = await client.queryTransactions("doge-node-alpha", 100, 0);
+    const accountName = process.env.DOGE_TELLER_NODE_ACCT;
+    const txn = await client.queryTransactions(accountName, 100, 0);
     console.log(`txn: ${txn}`);
   } catch (error) {
     console.log(error);

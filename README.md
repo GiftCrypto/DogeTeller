@@ -1,15 +1,27 @@
 # DogeTeller (v0.1.0)
 
-**Note: This is an EXPERIMENTAL project. Do not use this to move money if you are not 100% sure what you are doing. Use at your own risk!**
+**Note: This is an EXPERIMENTAL project. Do not use this to move money if you are not 100% sure of what you are doing. USE AT YOUR OWN RISK!**
 
 A secure, remote proxy that sits on top of dogecoind to provide useful functionality for apps that transfer dogecoin.
+
+## Table of Contents
+
+* [Getting Started](#getting-started)
+    + [Starting up a DogeTeller Server](#starting-up-a-dogeteller-server)
+    + [Integrating the DogeTeller Client](#integrating-the-dogeteller-client)
+* [API Reference](#api-reference)
+    + [`/api/public/getNewAddress`](#--api-public-getnewaddress-)
+    + [`/api/public/getFeeAmount`](#--api-public-getfeeamount-)
+    + [`/api/public/getServiceFee`](#--api-public-getservicefee-)
+    + [`/api/private/transferOut`](#--api-private-transferout-)
+    + [`/api/private/queryTransactions`](#--api-private-querytransactions-)
 
 ## Getting Started
 
 This section will show you how to setup a DogeTeller server and how to integrate the client library into your application.
 ### Starting up a DogeTeller Server
 
-*IMPORTANT: You will need an admin SDK key for Firebase! Firebase access is needed to talk to Firestore - the database DogeTeller uses to validate API keys. Please ask another developer on the team to generate Firebase credentials if you do not have permission to do so. For more info about the Firebase private key, [read this.](https://firebase.google.com/docs/admin/setup)*
+*IMPORTANT: You will need an admin SDK key for Firebase! Firebase access is needed to talk to Firestore - the database DogeTeller uses to store and validate API keys. For more info about the Firebase private key, [read this.](https://firebase.google.com/docs/admin/setup)*
 
 **1) Prerequisites:**
 
@@ -22,7 +34,7 @@ name: "<friendly name goes here>"
 serviceFee: 0.1
 settxfee: 1
 ```
-This database document will allow DogeTeller to authenticate requests and gather vital information about the dogecoind instance. If you plan to run mutliple instance of dogecoind-DogeTeller pairs, you can add a new database document for each pair. Also, make sure to keep your API keys secret!
+This database document will allow DogeTeller to authenticate requests and gather vital information about the dogecoind instance. If you plan to run multiple instance of dogecoind-DogeTeller pairs, you can add a new database document for each pair. Also, make sure to keep your API keys secret!
 
 **2) Configuring and Running DogeTeller:**
 
@@ -33,7 +45,7 @@ cd doge-teller
 npm install
 ```
 
-Secondly, you will need to place the following variable values into a file named `doge-teller/.env`:
+Secondly, you will need to set the following environment variables (you can do this by placing the following variable values into a file named `doge-teller/.env`):
 ```bash
 GOOGLE_APPLICATION_CREDENTIALS="LOCAL RELATIVE PATH_TO_FIREBASE_PRIVATE_KEY_FILE"
 DOGE_TELLER_NODE_HOST="0.0.0.0" # ip address of the dogecoind instance
@@ -56,7 +68,9 @@ curl --header "Authorization: Api-Key YOUR_KEY_GOES_HERE" -X GET http://localhos
 
 ### Integrating the DogeTeller Client
 
-First, import the client library into your client. Then create a new `DogeTellerClient` instance; make sure to supply the link to your dogecoind instance and your API key. 
+The DogeTeller client is a convenient way to make API calls to a DogeTeller instance from NodeJS.
+
+In order to get started, you first need to import the client library into your application. Then create a new `DogeTellerClient` instance - make sure to supply the link to your dogecoind instance and your API key. 
 
 
 ```javascript
@@ -88,6 +102,8 @@ You can see `src/example/examplerequests.js` for more examples of what you can d
 ---
 
 ## API Reference
+
+The following section goes over the REST API for DogeTeller. If you are curious about the details of a API request payload schema, please see `src/common/Schemas.js`.
 
 ### `/api/public/getNewAddress`
 - **Method: GET**
@@ -146,18 +162,18 @@ Response:
 }
 ```
 
-### `api/private/transferOut`
+### `/api/private/transferOut`
 - **Method: GET**
 - **Private: true**
 
 Sends an amount of dogecoin to a public address minus a specific fee amount.
 
-Payload:
+Payload Schema:
 
 ```json
 {
-    "amount": "Number",
-    "address": "String",
+    "address": {"type": "string", "minLength": 34, "maxLength": 34},
+    "amount": {"type": "number", "minimum": 2.1},
 }
 ```
 
@@ -168,4 +184,30 @@ Response:
     "txnId": "String",
 }
 ```
+
+### `/api/private/queryTransactions`
+- **Method: GET**
+- **Private: true**
+
+Fetches a specific number of records from a wallet account. The order of the array is the order in which the dogenode received the transaction
+
+Payload Schema:
+
+```json
+{
+    "account": {"type": "string"},
+    "records": {"type": "integer", "minimum": 1},
+    "skip": {"type": "integer", "minimum": 0},
+}
+```
+
+Response:
+
+```json
+{
+    "txnId": "String",
+}
+```
+
+
 ---
