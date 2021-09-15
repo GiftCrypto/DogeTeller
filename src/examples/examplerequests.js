@@ -19,8 +19,8 @@ const example = async () => {
     console.log(`service fee: Ð${serviceFee}`);
 
     const accountName = process.env.DOGE_TELLER_NODE_ACCT;
-    const txn = await client.queryTransactions(accountName, 100, 0);
-    console.log(`txn: ${txn}`);
+    const txns = await client.queryTransactions(accountName, 100, 0);
+    console.log(`txns: ${txns}`);
   } catch (error) {
     console.log(error);
   }

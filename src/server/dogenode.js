@@ -14,18 +14,18 @@ module.exports = class DogeNode {
    */
   constructor(options) {
     this.v = new Validator();
-    this.options = options;
-
     const validation = this.v.validate(options, dogeNodeOptionsSchema);
     if (!validation.valid) {
       throw new Error("Invalid configuration options!");
     }
 
     this.dogecoin = dogecoin({
-      user: this.options.dogeUser,
-      pass: this.options.dogePass,
-      host: this.options.dogeHost,
+      user: options.dogeUser,
+      pass: options.dogePass,
+      host: options.dogeHost,
     });
+
+    this.refreshInterval = options.refreshInterval;
   }
 
   /**

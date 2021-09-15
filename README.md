@@ -205,9 +205,8 @@ Response:
 
 ```json
 {
-    "txnId": "String",
+    "txns": "Array of Objects",
 }
 ```
-
 
 ---

@@ -5,10 +5,16 @@ const cors = require("cors");
 const passport = require("passport");
 const APIKeyStrat = require("passport-headerapikey").HeaderAPIKeyStrategy;
 const Validator = require("jsonschema").Validator;
+const {MongoClient} = require("mongodb");
 const {transferDataSchema, queryTransactions} = require("../common/Schemas");
 const errorMessages = require("./errorMessages");
 const rateLimit = require("express-rate-limit");
 require("dotenv").config();
+
+MongoClient.connect(process.env.MONGO_URL, (err, client) => {
+  // const db = client.db("dogeteller");
+  client.close();
+});
 
 // setup database access
 admin.initializeApp({
@@ -53,6 +59,7 @@ const dogenode = new DogeNode({
   dogeUser: process.env.DOGE_TELLER_NODE_USER,
   dogePass: process.env.DOGE_TELLER_NODE_PASS,
   dogeHost: process.env.DOGE_TELLER_NODE_HOST,
+  refreshInterval: 1000,
 });
 const walletAcct = process.env.DOGE_TELLER_NODE_ACCT;
 
