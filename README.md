@@ -70,7 +70,7 @@ DOGE_TELLER_API_SECRET="SUPER-DUPER-SECRET-VALUE"
 MONGO_URL="mongodb://localhost:27017"
 ```
 
-Next, if run `npm start` and you should see the following message:
+Next, if run `npm start` (or `npm run start-dev` to start the devlopment version) and you should see the following message:
 ```
 DogeTeller server running at http://localhost:5000
 ```

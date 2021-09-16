@@ -18,7 +18,7 @@ async function main() {
   // setup connection to database and register model types
   await mongoose.connect(`${process.env.MONGO_URL}/doge-teller`);
   const DogeNodeModel = mongoose.model("Node", dogeNodeSchema, "doge-nodes");
-  
+
   // setup connection to dogenode
   const nodeName = process.env.DOGE_TELLER_NODE_NAME;
   const dogenode = new DogeNode({
