@@ -1,5 +1,4 @@
 const DogeNode = require("./dogenode");
-const admin = require("firebase-admin");
 const express = require("express");
 const cors = require("cors");
 const passport = require("passport");
@@ -11,198 +10,216 @@ const errorMessages = require("./errorMessages");
 const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
-MongoClient.connect(process.env.MONGO_URL, (err, client) => {
-  // const db = client.db("dogeteller");
-  client.close();
-});
+const mongoClient = new MongoClient(process.env.MONGO_URL);
 
-// setup database access
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-});
-const db = admin.firestore();
+/**
+ * main function
+ */
+async function main() {
+  const client = await mongoClient.connect();
+  const mongodb = client.db("doge-teller");
+  const dogeNodesCollection = mongodb.collection("doge-nodes");
 
-const v = new Validator();
+  const v = new Validator();
 
-// setup web server
-const app = express();
-app.use(cors());
-passport.use(new APIKeyStrat(
-    {header: "Authorization", prefix: "Api-Key "},
-    false,
-    (apikey, done) => {
-      const query = db.collection("doge-nodes")
-          .where("name", "==", process.env.DOGE_TELLER_NODE_NAME)
-          .where("api-keys", "array-contains", apikey);
-      query.get().then((querySnapshot) => {
-        if (querySnapshot.empty) {
-          done(null, false);
-        } else {
-          done(null, true);
-        }
-      }).catch((error) => {
-        done(error);
-      });
-    }
-));
-app.use(passport.initialize());
-// api rate limiter to prevent api abuse
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-});
-app.use("/api/private/", apiLimiter);
-const port = 5000;
-
-// setup connection to dogenode
-const dogenode = new DogeNode({
-  dogeUser: process.env.DOGE_TELLER_NODE_USER,
-  dogePass: process.env.DOGE_TELLER_NODE_PASS,
-  dogeHost: process.env.DOGE_TELLER_NODE_HOST,
-  refreshInterval: 1000,
-});
-const walletAcct = process.env.DOGE_TELLER_NODE_ACCT;
-
-app.get("/api/public/getNetworkFee", function(req, res) {
-  const query = db.collection("doge-nodes")
-      .where("name", "==", process.env.DOGE_TELLER_NODE_NAME);
-  query.get().then((querySnapshot) => {
-    if (querySnapshot.empty) {
-      res.status(500).json({
-        err: errorMessages.DOC_NOT_FOUND,
-      });
-    } else {
-      res.json({
-        fee: querySnapshot.docs[0].data().settxfee,
-      });
-    }
-  }).catch((error) => {
-    console.log(error.toString());
-    res.status(500).json({
-      err: errorMessages.INTERNAL_ERR,
-    });
+  // setup web server
+  const app = express();
+  app.use(cors());
+  passport.use(new APIKeyStrat(
+      {header: "Authorization", prefix: "Api-Key "},
+      false,
+      (apikey, done) => {
+        dogeNodesCollection.findOne(
+            {
+              "name": {$eq: process.env.DOGE_TELLER_NODE_NAME},
+              "api-keys": {$in: [apikey]},
+            }, (err, node) => {
+              if (err) {
+                done(err);
+              }
+              if (!node) {
+                done(null, false);
+              } else {
+                done(null, true);
+              }
+            });
+      }
+  ));
+  app.use(passport.initialize());
+  // api rate limiter to prevent api abuse
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
   });
-});
+  app.use("/api/private/", apiLimiter);
+  const port = 5000;
 
-app.get("/api/public/getServiceFee", function(req, res) {
-  const query = db.collection("doge-nodes")
-      .where("name", "==", process.env.DOGE_TELLER_NODE_NAME);
-  query.get().then((querySnapshot) => {
-    if (querySnapshot.empty) {
-      res.status(500).json({
-        err: errorMessages.DOC_NOT_FOUND,
-      });
-    } else {
-      res.json({
-        fee: querySnapshot.docs[0].data().serviceFee,
-      });
-    }
-  }).catch((error) => {
-    console.log(error.toString());
-    res.status(500).json({
-      err: errorMessages.INTERNAL_ERR,
-    });
+  // setup connection to dogenode
+  const dogenode = new DogeNode({
+    dogeUser: process.env.DOGE_TELLER_NODE_USER,
+    dogePass: process.env.DOGE_TELLER_NODE_PASS,
+    dogeHost: process.env.DOGE_TELLER_NODE_HOST,
+    refreshInterval: 1000,
   });
-});
+  const walletAcct = process.env.DOGE_TELLER_NODE_ACCT;
 
-app.get("/api/public/getNewAddress",
-    rateLimit({
-      windowMs: 10 * 60 * 1000,
-      max: 2500,
-    }),
-    function(req, res) {
-      dogenode.getNewAddress(walletAcct).then((address) => {
-        res.json({
-          address: address,
-        });
-      }).catch((err) => {
+  app.get("/api/public/getNetworkFee", async function(req, res) {
+    const findNodeByName = {
+      "name": {$eq: process.env.DOGE_TELLER_NODE_NAME},
+    };
+    const node = await dogeNodesCollection.findOne(findNodeByName);
+    try {
+      if (!node) {
         res.status(500).json({
-          err: err.toString(),
-        });
-      });
-    }
-);
-
-app.get("/api/private/transferOut",
-    passport.authenticate("headerapikey", {session: false}),
-    async (req, res) => {
-      // validate input supplied by the user
-      const params = {
-        address: req.query.address,
-        amount: Number(req.query.amount),
-      };
-      const validation = v.validate(params, transferDataSchema);
-      if (!validation.valid) {
-        console.log(validation);
-        res.status(500).json({
-          err: errorMessages.BAD_ARGS,
+          err: errorMessages.DOC_NOT_FOUND,
         });
       } else {
-        // collect service fee and transfer money out of the account
-        const querySnapshot = await db.collection("doge-nodes")
-            .where("name", "==", process.env.DOGE_TELLER_NODE_NAME)
-            .get();
-        if (querySnapshot.empty) {
+        res.json({
+          fee: node.settxfee,
+        });
+      }
+    } catch (err) {
+      res.status(500).json({
+        err: errorMessages.INTERNAL_ERR,
+      });
+    }
+  });
+
+  app.get("/api/public/getServiceFee", async function(req, res) {
+    const findNodeByName = {
+      "name": {$eq: process.env.DOGE_TELLER_NODE_NAME},
+    };
+    const node = await dogeNodesCollection.findOne(findNodeByName);
+    try {
+      if (!node) {
+        res.status(500).json({
+          err: errorMessages.DOC_NOT_FOUND,
+        });
+      } else {
+        res.json({
+          fee: node.serviceFee,
+        });
+      }
+    } catch (err) {
+      res.status(500).json({
+        err: errorMessages.INTERNAL_ERR,
+      });
+    }
+  });
+
+  app.get("/api/public/getNewAddress",
+      rateLimit({
+        windowMs: 10 * 60 * 1000,
+        max: 2500,
+      }),
+      function(req, res) {
+        dogenode.getNewAddress(walletAcct).then((address) => {
+          res.json({
+            address: address,
+          });
+        }).catch((err) => {
           res.status(500).json({
-            err: errorMessages.DOC_NOT_FOUND,
+            err: err.toString(),
+          });
+        });
+      }
+  );
+
+  app.get("/api/private/transferOut",
+      passport.authenticate("headerapikey", {session: false}),
+      async (req, res) => {
+        // validate input supplied by the user
+        const params = {
+          address: req.query.address,
+          amount: Number(req.query.amount),
+        };
+        const validation = v.validate(params, transferDataSchema);
+        if (!validation.valid) {
+          console.log(validation);
+          res.status(500).json({
+            err: errorMessages.BAD_ARGS,
           });
         } else {
-          const networkFee = querySnapshot.docs[0].data().settxfee;
-          const serviceFee = querySnapshot.docs[0].data().serviceFee; // our cut
-          const totalFee = networkFee + serviceFee;
-          const fromAcct = process.env.DOGE_TELLER_NODE_ACCT;
-          const amt = params.amount;
-          if (amt - totalFee < 1) {
-            res.status(500).json({
-              err: errorMessages.TRANSACTION_FAILED,
-            });
-          } else {
-            try {
-              await dogenode.move(fromAcct, "fees", serviceFee);
-              const addr = params.address;
-              const amountSent = amt-totalFee;
-              const txn = await dogenode.sendFrom(fromAcct, addr, amountSent);
-              res.json({
-                txnId: txn,
-              });
-            } catch (error) {
-              console.log(error.toString());
+          // collect service fee and transfer money out of the account
+          try {
+            const findNodeByName = {
+              "name": {$eq: process.env.DOGE_TELLER_NODE_NAME},
+            };
+            const node = await dogeNodesCollection.findOne(findNodeByName);
+            if (!node) {
               res.status(500).json({
-                err: errorMessages.TRANSACTION_FAILED,
+                err: errorMessages.DOC_NOT_FOUND,
               });
+            } else {
+              const networkFee = node.settxfee;
+              const serviceFee = node.serviceFee;
+              const totalFee = networkFee + serviceFee;
+              const fromAcct = process.env.DOGE_TELLER_NODE_ACCT;
+              const amt = params.amount;
+              if (amt - totalFee < 1) {
+                res.status(500).json({
+                  err: errorMessages.TRANSACTION_FAILED,
+                });
+              } else {
+                try {
+                  await dogenode.move(fromAcct, "fees", serviceFee);
+                  const addr = params.address;
+                  const amtSent = amt-totalFee;
+                  const txn = await dogenode.sendFrom(fromAcct, addr, amtSent);
+                  res.json({
+                    txnId: txn,
+                  });
+                } catch (error) {
+                  console.log(error.toString());
+                  res.status(500).json({
+                    err: errorMessages.TRANSACTION_FAILED,
+                  });
+                }
+              }
             }
+          } catch (err) {
+            res.status(500).json({
+              err: errorMessages.INTERNAL_ERR,
+            });
           }
         }
       }
-    }
-);
+  );
 
-app.get("/api/private/queryTransactions",
-    passport.authenticate("headerapikey", {session: false}),
-    async (req, res) => {
-      const params = {
-        account: req.query.account,
-        records: Number(req.query.records),
-        skip: Number(req.query.skip),
-      };
-      const validation = v.validate(params, queryTransactions);
-      if (!validation.valid) {
-        console.log(validation);
-        res.status(500).json({
-          err: errorMessages.BAD_ARGS,
-        });
-      } else {
-        const acct = params.account;
-        const count = params.records;
-        const from = params.skip;
-        const txns = await dogenode.queryTransactions(acct, count, from);
-        res.json({
-          msg: txns,
-        });
+  app.get("/api/private/queryTransactions",
+      passport.authenticate("headerapikey", {session: false}),
+      async (req, res) => {
+        const params = {
+          account: req.query.account,
+          records: Number(req.query.records),
+          skip: Number(req.query.skip),
+        };
+        const validation = v.validate(params, queryTransactions);
+        if (!validation.valid) {
+          console.log(validation);
+          res.status(500).json({
+            err: errorMessages.BAD_ARGS,
+          });
+        } else {
+          const acct = params.account;
+          const count = params.records;
+          const from = params.skip;
+          const txns = await dogenode.queryTransactions(acct, count, from);
+          res.json({
+            msg: txns,
+          });
+        }
       }
-    }
-);
+  );
 
-app.listen(port, () => {
-  console.log(`DogeTeller server running at http://localhost:${port}`);
+  app.listen(port, () => {
+    console.log(`DogeTeller server running at http://localhost:${port}`);
+  });
+}
+
+process.on("exit", async () => {
+  console.log("cleaning up...");
+  await mongoClient.close();
 });
+
+main();

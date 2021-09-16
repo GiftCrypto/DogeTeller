@@ -21,19 +21,33 @@ A secure, remote proxy that sits on top of dogecoind to provide useful functiona
 This section will show you how to setup a DogeTeller server and how to integrate the client library into your application.
 ### Starting up a DogeTeller Server
 
-*IMPORTANT: You will need an admin SDK key for Firebase! Firebase access is needed to talk to Firestore - the database DogeTeller uses to store and validate API keys. For more info about the Firebase private key, [read this.](https://firebase.google.com/docs/admin/setup)*
+*IMPORTANT: You will need to have a [MongoDB](https://www.mongodb.com/) instance running. The DogeTeller server uses the MongoDB for authentication and data storage.*
 
 **1) Prerequisites:**
 
 - Create a `dogecoind` instance with local RPC command access and two accounts with the names `fees` and `<your-acct-name>`.
     - The first account, `fees` is used to collect the Service Fee amount. The second account is used to store and send dogecoin to public wallet addresses.
-- Create a collection called `doge-nodes` in your Firestore DB with the following document entry:
+- In your MongoDB create a database called `doge-teller`
+    - Within the database, create a collection called `doge-nodes` with the following document schema:
 ```json
 api-keys: ["<uniqueapikey1>", "<uniqueapikey2>", "..."]
 name: "<friendly name goes here>"
 serviceFee: 0.1
 settxfee: 1
 ```
+For example, an example `doge-nodes` entry might look like the following object:
+```json
+{
+    "_id": { 
+        "$oid": "<mongo-generated-id>" 
+    },
+    "api-keys": ["SECRET-KEY-GOES-HERE"],
+    "name": "elon",
+    "serviceFee": 0.1,
+    "settxfee": 1
+}
+```
+
 This database document will allow DogeTeller to authenticate requests and gather vital information about the dogecoind instance. If you plan to run multiple instance of dogecoind-DogeTeller pairs, you can add a new database document for each pair. Also, make sure to keep your API keys secret!
 
 **2) Configuring and Running DogeTeller:**
@@ -47,12 +61,13 @@ npm install
 
 Secondly, you will need to set the following environment variables (you can do this by placing the following variable values into a file named `doge-teller/.env`):
 ```bash
-GOOGLE_APPLICATION_CREDENTIALS="LOCAL RELATIVE PATH_TO_FIREBASE_PRIVATE_KEY_FILE"
 DOGE_TELLER_NODE_HOST="0.0.0.0" # ip address of the dogecoind instance
 DOGE_TELLER_NODE_USER="dogefather"
 DOGE_TELLER_NODE_PASS="doge123"
 DOGE_TELLER_NODE_ACCT="your-acct-name" # wallet account name
 DOGE_TELLER_NODE_NAME="elon" # friendly name for the dogecoind instance
+DOGE_TELLER_API_SECRET="SUPER-DUPER-SECRET-VALUE"
+MONGO_URL="mongodb://localhost:27017"
 ```
 
 Next, if run `npm start` and you should see the following message:
@@ -60,10 +75,19 @@ Next, if run `npm start` and you should see the following message:
 DogeTeller server running at http://localhost:5000
 ```
 
-Finally, you can test to see if you configured everything correctly by making an example API request:
+Finally, you can test to see if you configured everything correctly by running `npm run example` or by making an example API request like:
 
 ```
 curl --header "Authorization: Api-Key YOUR_KEY_GOES_HERE" -X GET http://localhost:5000/getNewAddress
+```
+
+*Here is the expected value for the output of `npm run example`:*
+```
+fetching some info about the dogecoind instance:
+addr: DTm...
+network fee: Ð1
+service fee: Ð0.1
+txns: [object Object],[object Object]...
 ```
 
 ### Integrating the DogeTeller Client

@@ -6,6 +6,7 @@
   "scripts": {
     "lint": "eslint .",
     "start": "npm run lint && nodemon ./src/server/DogeTeller.js",
+    "example": "node ./src/examples/examplerequests.js",
     "test": "jest"
   },
   "keywords": [
@@ -20,7 +21,6 @@
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "express-rate-limit": "^5.3.0",
-    "firebase-admin": "^9.11.0",
     "jsonschema": "^1.4.0",
     "mongodb": "^4.1.1",
     "node-dogecoin": "^0.3.9",
