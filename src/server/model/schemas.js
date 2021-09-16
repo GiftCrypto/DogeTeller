@@ -31,11 +31,21 @@ const userSchema = new Schema({
       },
       message: "Invalid email!",
     },
+    unique: true,
     required: true,
   },
   passwordHash: {
     type: String,
     required: true,
+  },
+  address: {
+    type: String,
+    requried: true,
+  },
+  registered: {
+    type: Boolean,
+    default: false,
+    requried: true,
   },
 });
 

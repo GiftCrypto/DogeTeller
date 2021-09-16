@@ -1,7 +1,11 @@
 const axios = require("axios");
 const errorMessages = require("./errorMessages");
 const Validator = require("jsonschema").Validator;
-const {transferDataSchema, queryTransactions} = require("../common/Schemas");
+const {
+  transferDataSchema,
+  queryTransactions,
+  registerUserSchema,
+} = require("../common/Schemas");
 
 /**
  * Client library that provides functions for interacting with a DogeTeller
@@ -35,7 +39,9 @@ module.exports = class DogeTellerClient {
   convertRequestError(networkError) {
     console.log("Network Error: " + networkError.message);
     if (networkError.response) {
-      if (networkError.response.status === 401) {
+      if (networkError.response.status === 400) {
+        return new Error(errorMessages.BAD_REQ);
+      } else if (networkError.response.status === 401) {
         return new Error(errorMessages.UNAUTHORIZED);
       } else if (networkError.response.status === 429) {
         return new Error(errorMessages.TOO_MANY);
@@ -163,6 +169,39 @@ module.exports = class DogeTellerClient {
       });
     } catch (networkError) {
       throw this.convertRequestError(networkError);
+    }
+  }
+
+  /**
+   * Registers a new user account.
+   * @param {String} email email to associate with new account
+   * @param {String} password plain-text password
+   */
+  async registerUser(email, password) {
+    /* eslint-disable */
+    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    /* eslint-enable */
+    const validEmail = re.test(String(email).toLowerCase());
+    if (!validEmail) {
+      throw new Error(errorMessages.BAD_ARGS);
+    }
+
+    const params = {
+      email,
+      password,
+    };
+    const validation = this.v.validate(params, registerUserSchema);
+    if (!validation.valid) {
+      throw new Error(errorMessages.BAD_ARGS);
+    } else {
+      try {
+        const res = await this.instance("/api/private/registerUser", {params});
+        return new Promise((resolve) => {
+          resolve(res.data.success);
+        });
+      } catch (networkError) {
+        throw this.convertRequestError(networkError);
+      }
     }
   }
 };

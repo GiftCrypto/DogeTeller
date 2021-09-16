@@ -21,6 +21,9 @@ const example = async () => {
     const accountName = process.env.DOGE_TELLER_NODE_ACCT;
     const txns = await client.queryTransactions(accountName, 100, 0);
     console.log(`txns: ${txns}`);
+
+    const success = await client.registerUser("test@example.com", "abc123");
+    console.log(`registered user?: ${success}`);
   } catch (error) {
     console.log(error);
   }

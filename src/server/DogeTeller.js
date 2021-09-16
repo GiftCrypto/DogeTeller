@@ -1,4 +1,4 @@
-const DogeNode = require("./dogenode");
+const DogeNode = require("./model/dogenode");
 const express = require("express");
 const cors = require("cors");
 const passport = require("passport");
@@ -6,9 +6,14 @@ const APIKeyStrat = require("passport-headerapikey").HeaderAPIKeyStrategy;
 const Validator = require("jsonschema").Validator;
 const mongoose = require("mongoose");
 const {dogeNodeSchema} = require("./model/schemas");
-const {transferDataSchema, queryTransactions} = require("../common/Schemas");
+const {
+  transferDataSchema,
+  queryTransactions,
+  registerUserSchema,
+} = require("../common/Schemas");
 const errorMessages = require("./errorMessages");
 const rateLimit = require("express-rate-limit");
+const Users = require("./model/users");
 require("dotenv").config();
 
 /**
@@ -30,6 +35,9 @@ async function main() {
   const walletAcct = process.env.DOGE_TELLER_NODE_ACCT;
 
   const v = new Validator();
+
+  const users = new Users();
+  await users.buildIndices();
 
   // setup web server
   const app = express();
@@ -198,6 +206,39 @@ async function main() {
           res.json({
             msg: txns,
           });
+        }
+      }
+  );
+
+  app.get("/api/private/registerUser",
+      passport.authenticate("headerapikey", {session: false}),
+      async (req, res) => {
+        const params = {
+          email: req.query.email,
+          password: req.query.password,
+        };
+        /* eslint-disable */
+        const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        /* eslint-enable */
+        const validEmail = re.test(String(params.email).toLowerCase());
+        const validate = v.validate(params, registerUserSchema);
+        if (!validate.valid || !validEmail) {
+          console.log(validate);
+          res.status(500).json({
+            err: errorMessages.BAD_ARGS,
+          });
+        } else {
+          try {
+            await users.registerUser(params.email, params.password);
+            res.json({
+              success: true,
+            });
+          } catch (err) {
+            console.log(err);
+            res.status(400).json({
+              err: errorMessages.BAD_REQ,
+            });
+          }
         }
       }
   );

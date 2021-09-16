@@ -1,4 +1,4 @@
-# DogeTeller (v0.2.1)
+# DogeTeller (v0.3.0)
 
 **Note: This is an EXPERIMENTAL project. Do not use this to move money if you are not 100% sure of what you are doing. USE AT YOUR OWN RISK!**
 

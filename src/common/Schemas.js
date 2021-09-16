@@ -31,8 +31,19 @@ const queryTransactions = {
   "required": ["account", "records", "skip"],
 };
 
+const registerUserSchema = {
+  "id": "/RegisterUserSchema",
+  "type": "object",
+  "properties": {
+    "email": {"type": "string"},
+    "password": {"type": "string"},
+  },
+  "required": ["email", "password"],
+};
+
 module.exports = {
   transferDataSchema,
   dogeNodeOptionsSchema,
   queryTransactions,
+  registerUserSchema,
 };

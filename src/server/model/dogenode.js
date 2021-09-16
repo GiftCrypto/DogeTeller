@@ -1,6 +1,6 @@
 const dogecoin = require("node-dogecoin");
 const Validator = require("jsonschema").Validator;
-const {dogeNodeOptionsSchema} = require("../common/Schemas");
+const {dogeNodeOptionsSchema} = require("../../common/Schemas");
 
 /**
  * Creates a connection to a dogenode (dogecoind) over localhost and
