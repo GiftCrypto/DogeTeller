@@ -1,6 +1,6 @@
 {
   "name": "doge-teller",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "A remote proxy built on top of dogecoind RPC calls that provides useful functionality for apps that transfer dogecoin",
   "main": "index.js",
   "scripts": {

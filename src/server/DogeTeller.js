@@ -15,14 +15,25 @@ require("dotenv").config();
  * main function
  */
 async function main() {
+  // setup connection to database and register model types
   await mongoose.connect(`${process.env.MONGO_URL}/doge-teller`);
   const DogeNodeModel = mongoose.model("Node", dogeNodeSchema, "doge-nodes");
+  
+  // setup connection to dogenode
   const nodeName = process.env.DOGE_TELLER_NODE_NAME;
+  const dogenode = new DogeNode({
+    dogeUser: process.env.DOGE_TELLER_NODE_USER,
+    dogePass: process.env.DOGE_TELLER_NODE_PASS,
+    dogeHost: process.env.DOGE_TELLER_NODE_HOST,
+    refreshInterval: 1000,
+  });
+  const walletAcct = process.env.DOGE_TELLER_NODE_ACCT;
 
   const v = new Validator();
 
   // setup web server
   const app = express();
+  const port = 5000;
   app.use(cors());
   passport.use(new APIKeyStrat(
       {header: "Authorization", prefix: "Api-Key "},
@@ -50,16 +61,6 @@ async function main() {
     max: 100,
   });
   app.use("/api/private/", apiLimiter);
-  const port = 5000;
-
-  // setup connection to dogenode
-  const dogenode = new DogeNode({
-    dogeUser: process.env.DOGE_TELLER_NODE_USER,
-    dogePass: process.env.DOGE_TELLER_NODE_PASS,
-    dogeHost: process.env.DOGE_TELLER_NODE_HOST,
-    refreshInterval: 1000,
-  });
-  const walletAcct = process.env.DOGE_TELLER_NODE_ACCT;
 
   app.get("/api/public/getNetworkFee", async function(req, res) {
     try {

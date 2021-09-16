@@ -1,4 +1,4 @@
-# DogeTeller (v0.1.0)
+# DogeTeller (v0.2.1)
 
 **Note: This is an EXPERIMENTAL project. Do not use this to move money if you are not 100% sure of what you are doing. USE AT YOUR OWN RISK!**
 
@@ -41,7 +41,7 @@ For example, an example `doge-nodes` entry might look like the following object:
     "_id": { 
         "$oid": "<mongo-generated-id>" 
     },
-    "api-keys": ["SECRET-KEY-GOES-HERE"],
+    "api-keys": ["SECRET-KEY-GOES-HERE"], // this is where you can define API keys
     "name": "elon",
     "serviceFee": 0.1,
     "settxfee": 1
