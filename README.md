@@ -2,7 +2,7 @@
 
 **Note: This is an EXPERIMENTAL project. Do not use this to move money if you are not 100% sure of what you are doing. USE AT YOUR OWN RISK!**
 
-A secure, remote proxy that sits on top of dogecoind to provide useful functionality for apps that transfer dogecoin.
+A remote proxy built on top of dogecoind RPC calls that provides useful functionality for apps that transfer dogecoin.
 
 ## Table of Contents
 

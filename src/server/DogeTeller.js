@@ -4,21 +4,20 @@ const cors = require("cors");
 const passport = require("passport");
 const APIKeyStrat = require("passport-headerapikey").HeaderAPIKeyStrategy;
 const Validator = require("jsonschema").Validator;
-const {MongoClient} = require("mongodb");
+const mongoose = require("mongoose");
+const {dogeNodeSchema} = require("./model/schemas");
 const {transferDataSchema, queryTransactions} = require("../common/Schemas");
 const errorMessages = require("./errorMessages");
 const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
-const mongoClient = new MongoClient(process.env.MONGO_URL);
-
 /**
  * main function
  */
 async function main() {
-  const client = await mongoClient.connect();
-  const mongodb = client.db("doge-teller");
-  const dogeNodesCollection = mongodb.collection("doge-nodes");
+  await mongoose.connect(`${process.env.MONGO_URL}/doge-teller`);
+  const DogeNodeModel = mongoose.model("Node", dogeNodeSchema, "doge-nodes");
+  const nodeName = process.env.DOGE_TELLER_NODE_NAME;
 
   const v = new Validator();
 
@@ -28,21 +27,20 @@ async function main() {
   passport.use(new APIKeyStrat(
       {header: "Authorization", prefix: "Api-Key "},
       false,
-      (apikey, done) => {
-        dogeNodesCollection.findOne(
-            {
-              "name": {$eq: process.env.DOGE_TELLER_NODE_NAME},
-              "api-keys": {$in: [apikey]},
-            }, (err, node) => {
-              if (err) {
-                done(err);
-              }
-              if (!node) {
-                done(null, false);
-              } else {
-                done(null, true);
-              }
-            });
+      async (apikey, done) => {
+        try {
+          const node = await DogeNodeModel.findOne({
+            "name": nodeName,
+            "api-keys": {$in: [apikey]},
+          });
+          if (node) {
+            done(null, true);
+          } else {
+            done(null, false);
+          }
+        } catch (err) {
+          done(err);
+        }
       }
   ));
   app.use(passport.initialize());
@@ -64,11 +62,8 @@ async function main() {
   const walletAcct = process.env.DOGE_TELLER_NODE_ACCT;
 
   app.get("/api/public/getNetworkFee", async function(req, res) {
-    const findNodeByName = {
-      "name": {$eq: process.env.DOGE_TELLER_NODE_NAME},
-    };
-    const node = await dogeNodesCollection.findOne(findNodeByName);
     try {
+      const node = await DogeNodeModel.findOne({"name": nodeName});
       if (!node) {
         res.status(500).json({
           err: errorMessages.DOC_NOT_FOUND,
@@ -86,11 +81,8 @@ async function main() {
   });
 
   app.get("/api/public/getServiceFee", async function(req, res) {
-    const findNodeByName = {
-      "name": {$eq: process.env.DOGE_TELLER_NODE_NAME},
-    };
-    const node = await dogeNodesCollection.findOne(findNodeByName);
     try {
+      const node = await DogeNodeModel.findOne({"name": nodeName});
       if (!node) {
         res.status(500).json({
           err: errorMessages.DOC_NOT_FOUND,
@@ -142,10 +134,7 @@ async function main() {
         } else {
           // collect service fee and transfer money out of the account
           try {
-            const findNodeByName = {
-              "name": {$eq: process.env.DOGE_TELLER_NODE_NAME},
-            };
-            const node = await dogeNodesCollection.findOne(findNodeByName);
+            const node = await DogeNodeModel.findOne({"name": nodeName});
             if (!node) {
               res.status(500).json({
                 err: errorMessages.DOC_NOT_FOUND,
@@ -219,7 +208,6 @@ async function main() {
 
 process.on("exit", async () => {
   console.log("cleaning up...");
-  await mongoClient.close();
 });
 
 main();
