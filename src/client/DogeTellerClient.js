@@ -1,7 +1,7 @@
 const axios = require("axios");
 const errorMessages = require("./errorMessages");
 const Validator = require("jsonschema").Validator;
-const {transferDataSchema} = require("../common/Schemas");
+const {transferDataSchema, queryTransactions} = require("../common/Schemas");
 
 /**
  * Client library that provides functions for interacting with a DogeTeller
@@ -17,6 +17,7 @@ module.exports = class DogeTellerClient {
   constructor(host, apiKey) {
     this.instance = axios.create({
       baseURL: host,
+      timeout: 3000,
       headers: {
         "Content-Type": "application/json",
         "authorization": `Api-Key ${apiKey}`,
@@ -31,7 +32,7 @@ module.exports = class DogeTellerClient {
    * @param {Object} networkError Axios error object
    * @return {Error} the new client-side error object
    */
-  #convertRequestError(networkError) {
+  convertRequestError(networkError) {
     console.log("Network Error: " + networkError.message);
     if (networkError.response) {
       if (networkError.response.status === 401) {
@@ -58,7 +59,7 @@ module.exports = class DogeTellerClient {
         resolve(Number(res.data.fee));
       });
     } catch (networkError) {
-      throw this.#convertRequestError(networkError);
+      throw this.convertRequestError(networkError);
     }
   }
 
@@ -76,7 +77,7 @@ module.exports = class DogeTellerClient {
         resolve(Number(res.data.fee));
       });
     } catch (networkError) {
-      throw this.#convertRequestError(networkError);
+      throw this.convertRequestError(networkError);
     }
   }
 
@@ -94,7 +95,7 @@ module.exports = class DogeTellerClient {
         resolve(res.data.address);
       });
     } catch (networkError) {
-      throw this.#convertRequestError(networkError);
+      throw this.convertRequestError(networkError);
     }
   }
 
@@ -126,7 +127,42 @@ module.exports = class DogeTellerClient {
         resolve(res.data.txnId);
       });
     } catch (networkError) {
-      throw this.#convertRequestError(networkError);
+      throw this.convertRequestError(networkError);
+    }
+  }
+
+  /**
+   * Fetches a specific number of records from a wallet account. The order of
+   * the array is the order in which the dogenode received the transaction
+   *
+   * For example:
+   * [oldest...newest]
+   * @param {String} account the account to fetch records for
+   * @param {Integer} records number of records to fetch
+   * @param {Integer} skip number of records to skip over
+   * @return {Promise} resolves with array of transaction IDs
+   * @throws {Error} on request failure
+   */
+  async queryTransactions(account, records, skip) {
+    const params = {
+      account,
+      records: Number(records),
+      skip: Number(skip),
+    };
+    const validation = this.v.validate(params, queryTransactions);
+    if (!validation.valid) {
+      throw new Error(errorMessages.BAD_ARGS);
+    }
+
+    try {
+      const res = await this.instance("/api/private/queryTransactions", {
+        params,
+      });
+      return new Promise((resolve) => {
+        resolve(res.data.msg);
+      });
+    } catch (networkError) {
+      throw this.convertRequestError(networkError);
     }
   }
 };

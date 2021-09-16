@@ -1,11 +1,12 @@
 {
   "name": "doge-teller",
-  "version": "0.1.0",
-  "description": "A remote proxy that sits on top of dogecoind RPC calls that provides useful functionality for apps that transfer dogecoin",
+  "version": "0.2.1",
+  "description": "A remote proxy built on top of dogecoind RPC calls that provides useful functionality for apps that transfer dogecoin",
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",
     "start": "npm run lint && nodemon ./src/server/DogeTeller.js",
+    "example": "node ./src/examples/examplerequests.js",
     "test": "jest"
   },
   "keywords": [
@@ -20,8 +21,8 @@
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "express-rate-limit": "^5.3.0",
-    "firebase-admin": "^9.11.0",
     "jsonschema": "^1.4.0",
+    "mongoose": "^6.0.6",
     "node-dogecoin": "^0.3.9",
     "passport": "^0.4.1",
     "passport-headerapikey": "^1.2.2"
