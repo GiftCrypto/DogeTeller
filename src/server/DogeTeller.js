@@ -229,7 +229,8 @@ async function main() {
           });
         } else {
           try {
-            await users.registerUser(params.email, params.password);
+            const address = await dogenode.getNewAddress(walletAcct);
+            await users.registerUser(params.email, params.password, address);
             res.json({
               success: true,
             });

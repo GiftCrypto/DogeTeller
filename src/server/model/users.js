@@ -25,16 +25,14 @@ module.exports = class Users {
    * Registers a new user account.
    * @param {String} email email to associate with new account
    * @param {String} password plain-text password
+   * @param {String} address wallet address to associate with the user
    */
-  async registerUser(email, password) {
-    const hash = await bcrypt.hash(password, 10);
-
-    // TODO: generate wallet address for the user
-
+  async registerUser(email, password, address) {
+    const passwordHash = await bcrypt.hash(password, 10);
     const newUser = new this.UserModel({
       email,
-      passwordHash: hash,
-      address: "address",
+      passwordHash,
+      address,
     });
     await newUser.save();
   }

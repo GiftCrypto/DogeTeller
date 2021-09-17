@@ -22,6 +22,9 @@ const example = async () => {
     const txns = await client.queryTransactions(accountName, 100, 0);
     console.log(`txns: ${txns}`);
 
+    // NOTE: this might fail if you try to run npm run example more than once
+    // without changing the email address value. it fails because each user must
+    // have a unique wallet address.
     const success = await client.registerUser("test@example.com", "abc123");
     console.log(`registered user?: ${success}`);
   } catch (error) {
