@@ -5,9 +5,8 @@ const dogeNodeOptionsSchema = {
     "dogeHost": {"type": "string", "required": "tre"},
     "dogePass": {"type": "string"},
     "dogeUser": {"type": "string"},
-    "refreshInterval": {"type": "Number"},
   },
-  "required": ["dogeHost", "dogePass", "dogeUser", "refreshInterval"],
+  "required": ["dogeHost", "dogePass", "dogeUser"],
 };
 
 const transferDataSchema = {

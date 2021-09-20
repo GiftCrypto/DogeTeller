@@ -19,12 +19,15 @@ const example = async () => {
     console.log(`service fee: Ð${serviceFee}`);
 
     const accountName = process.env.DOGE_TELLER_NODE_ACCT;
-    const txns = await client.queryTransactions(accountName, 100, 0);
-    console.log(`txns: ${txns}`);
+    const txns = await client.queryTransactions(accountName, 20, 0);
+    console.log("Most Recent Transaction: ");
+    txns.forEach((txn) => {
+      console.log(txn);
+    });
 
     // NOTE: this might fail if you try to run npm run example more than once
     // without changing the email address value. it fails because each user must
-    // have a unique wallet address.
+    // have a unique email address.
     const success = await client.registerUser("test@example.com", "abc123");
     console.log(`registered user?: ${success}`);
   } catch (error) {

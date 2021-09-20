@@ -42,6 +42,11 @@ const userSchema = new Schema({
     type: String,
     requried: true,
   },
+  balance: {
+    type: Number,
+    default: 0,
+    required: true,
+  },
   registered: {
     type: Boolean,
     default: false,
@@ -49,7 +54,86 @@ const userSchema = new Schema({
   },
 });
 
+const sendTxnSchema = new Schema({
+  account: {
+    type: String,
+    required: true,
+  },
+  address: {
+    type: String,
+    required: true,
+  },
+  time: {
+    type: Number,
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+  },
+  txnId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  blockHash: {
+    type: String,
+    required: true,
+  },
+});
+
+const recvTxnSchema = new Schema({
+  account: {
+    type: String,
+    required: true,
+  },
+  address: {
+    type: String,
+    required: true,
+  },
+  time: {
+    type: Number,
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+  },
+  txnId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  blockHash: {
+    type: String,
+    required: true,
+  },
+});
+
+const moveTxnSchema = new Schema({
+  account: {
+    type: String,
+    required: true,
+  },
+  otheraccount: {
+    type: String,
+    required: true,
+  },
+  time: {
+    type: Number,
+    unique: true,
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+  },
+});
+
 module.exports = {
   dogeNodeSchema,
   userSchema,
+  sendTxnSchema,
+  recvTxnSchema,
+  moveTxnSchema,
 };

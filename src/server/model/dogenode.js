@@ -24,8 +24,6 @@ module.exports = class DogeNode {
       pass: options.dogePass,
       host: options.dogeHost,
     });
-
-    this.refreshInterval = options.refreshInterval;
   }
 
   /**
@@ -113,6 +111,43 @@ module.exports = class DogeNode {
       this.dogecoin.exec("listtransactions", acct, count, from, (err, data) => {
         if (err) {
           console.log(err);
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+  }
+
+  /**
+   * Finds all transactions that the DogeNode has been apart of
+   * @return {Promise} resolves with an object containing all transactions and
+   * related metadata OR rejects on error
+   */
+  fetchAllTransactions() {
+    return new Promise((resolve, reject) => {
+      // if "blockhash" arguement is not supplied to listsinceblock, then all
+      // transactions are returned
+      this.dogecoin.exec("listsinceblock", (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+  }
+
+  /**
+   * Fetchs an array of transactions that occurred after the specified blockhash
+   * @param {String} blockHash The blockhash to fetch transactions relative to
+   * @return {Promise} resolves with an object containing all transactions that
+   * happened after blockHash and related metadata OR rejects on error
+   */
+  fetchTxnsSince(blockHash) {
+    return new Promise((resolve, reject) => {
+      this.dogecoin.exec("listsinceblock", blockHash, (err, data) => {
+        if (err) {
           reject(err);
         } else {
           resolve(data);

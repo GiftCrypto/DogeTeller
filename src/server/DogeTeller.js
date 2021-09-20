@@ -14,6 +14,7 @@ const {
 const errorMessages = require("./errorMessages");
 const rateLimit = require("express-rate-limit");
 const Users = require("./model/users");
+const Transctions = require("./model/transactions");
 require("dotenv").config();
 
 /**
@@ -30,14 +31,19 @@ async function main() {
     dogeUser: process.env.DOGE_TELLER_NODE_USER,
     dogePass: process.env.DOGE_TELLER_NODE_PASS,
     dogeHost: process.env.DOGE_TELLER_NODE_HOST,
-    refreshInterval: 1000,
   });
   const walletAcct = process.env.DOGE_TELLER_NODE_ACCT;
 
   const v = new Validator();
 
+  // create and register data model managers
   const users = new Users();
   await users.buildIndices();
+
+  const accts = [walletAcct, "fees"];
+  const txns = new Transctions(dogenode, 5000, accts);
+  await txns.buildIndices();
+  txns.startRefresh();
 
   // setup web server
   const app = express();
