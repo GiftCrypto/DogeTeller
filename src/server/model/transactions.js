@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const EventEmitter = require("events");
+const crypto = require("crypto");
 const {
   sendTxnSchema,
   recvTxnSchema,
@@ -60,43 +61,159 @@ module.exports = class Transactions extends EventEmitter {
   }
 
   /**
-   * sdfsd
+   * Updates transaction records in the database.
    */
   async update() {
     try {
       if (this.latestSeenBlockHash === "") {
         // compare DB records and DogeNode records to fast-forward the DB
         console.log("Fast-forwarding transaction records in database...");
-        const td = await this.dogenode.fetchAllTransactions();
-        td.transactions.forEach((txn) => {
-          console.log(txn);
-        });
+        const td = await this.dogenode.fetchAllSendRecvTransactions();
         if (td.transactions.length === 0) {
           // no transactions have happened yet, so just update
-          // the latestSeenBlockHash
+          // the latestSeenBlockHash with the last block on the blockchain.
           this.latestSeenBlockHash = td.lastblock;
           console.log("Complete: 0 records fast-forwarded.");
         } else {
-          // insert all missing transactions into db and update
-          // the latestSeenBlockHash
+          // insert all missing transactions into db and update latestSeenBH
+          const txns = await this.fetchEveryTransaction();
+          console.log(`All transactions: ${txns.length}`);
 
-          // update DB with send/recv transactions
+          // filter each transaction by category
+          const send = txns.filter((txn) => txn.category === "send");
+          console.log(`send txns: ${send.length}`);
+          const recv = txns.filter((txn) => txn.category === "receive");
+          console.log(`recv txns: ${recv.length}`);
+          const move = txns.filter((txn) => txn.category === "move");
+          console.log(`move txns: ${move.length}`);
 
-          // update DB with move transactions
+          const sendCount = await this.ffSendOrRecvTxn(send, this.SendTxnModel);
+          const recvCount = await this.ffSendOrRecvTxn(recv, this.RecvTxnModel);
+          const moveCount = await this.fastForwardMoveTxns(move);
 
+          // update with last send/recv block hash
           this.latestSeenBlockHash = "what";
-          console.log("Complete: 0 records fast-forwarded.");
+
+          const totalFfd = sendCount + recvCount + moveCount;
+          console.log(`Complete: ${totalFfd} records fast-forwarded.`);
         }
       } else {
-        // fetch and save all since latest block
-        const td = await this.dogenode.fetchTxnsSince(this.latestSeenBlockHash);
-        console.log(td.transactions.length);
-        if (td.transactions.length > 0) {
-          console.log("updating db with latest transactions");
-        }
+        // fetch and save all recv transactions since latest block
+        console.log(`latest block hash: ${this.latestSeenBlockHash}`);
       }
     } catch (err) {
+      console.log("Error occured during refresh:");
       console.log(err);
     }
+  }
+
+  /**
+   * Updates database with move transactions if the transactions are not already
+   * saved in the database
+   * @param {[Object]} move array containing info about transactions with
+   * category "move"
+   * @return {Promise} resolves with number of "move" transactions written to
+   * the DB.
+   */
+  async fastForwardMoveTxns(move) {
+    const mapped = move.map((txn) => {
+      const key = txn.time.toString() + txn.account + txn.otheraccount +
+          txn.amount.toString();
+      const sha256 = crypto.createHash("sha256");
+      const hash = sha256.update(key).digest("base64");
+      return new this.MoveTxnModel({
+        account: txn.account === "" ? "_" : txn.account,
+        txnHash: hash,
+        otheraccount: txn.otheraccount === "" ? "_" : txn.otheraccount,
+        time: txn.time,
+        amount: txn.amount,
+      });
+    });
+    let inserted = 0;
+    try {
+      const res = await this.MoveTxnModel.insertMany(mapped, {
+        rawResult: true,
+        ordered: false,
+      });
+      inserted += res.insertedCount;
+    } catch (err) {
+      if (err.code !== 11000) {
+        throw new Error("Failed to write new documents");
+      }
+      console.log(`Duplicate docs (MoveTxn): ${err.writeErrors.length}`);
+      inserted += err.insertedDocs.length;
+    }
+    return inserted;
+  }
+
+  /**
+   * Updates database with send or recv transactions if the transactions are not
+   * already saved in the database
+   * @param {[Object]} txns txns containing info about transactions with
+   * category "send" or "receive"
+   * @param {Model} Model the mongoose model to save to
+   * @return {Promise} resolves with number of "save" transactions written to
+   * the DB.
+   */
+  async ffSendOrRecvTxn(txns, Model) {
+    const mappedTxns = txns.map((txn) => {
+      return new Model({
+        account: txn.account === "" ? "_" : txn.account,
+        address: txn.address,
+        time: txn.time,
+        amount: txn.amount,
+        txnId: txn.txid,
+        blockHash: txn.blockhash,
+      });
+    });
+    let inserted = 0;
+    try {
+      const res = await Model.insertMany(mappedTxns, {
+        rawResult: true,
+        ordered: false,
+      });
+      inserted += res.insertedCount;
+    } catch (err) {
+      if (err.code !== 11000) {
+        throw new Error("Failed to write new documents");
+      }
+      const modelName = Model.modelName;
+      console.log(`Duplicate docs (${modelName}): ${err.writeErrors.length}`);
+      inserted += err.insertedDocs.length;
+    }
+
+    return inserted;
+  }
+
+  /**
+   * Fetches all transactions (move, send, recv) that the DogeNode has been
+   * apart of.
+   * return {Promise} returned promise resolves with an array of move, send,
+   * and recv txns. OR rejects on error.
+   */
+  async fetchEveryTransaction() {
+    let txns = [];
+    for (let i = 0; i < this.accounts.length; i++) {
+      const newTxns = await this.fetchEveryAcctTransaction(this.accounts[i]);
+      txns = txns.concat(newTxns);
+    }
+    return txns;
+  }
+
+  /**
+   * Fetches every transaction (move, send, recv) that the specified account has
+   * been apart of.
+   * @param {String} acct account to fetch all transactions for
+   * @return {Promise} promise that resolves with array containing every txn for
+   * the account
+   */
+  async fetchEveryAcctTransaction(acct) {
+    let batchSize = 5;
+    let found = [];
+    do {
+      batchSize *= 2;
+      found = await this.dogenode.queryTransactions(acct, batchSize, 0);
+    } while (found.length === batchSize);
+    return found;
   }
 };

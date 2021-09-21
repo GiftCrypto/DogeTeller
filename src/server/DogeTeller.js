@@ -40,7 +40,7 @@ async function main() {
   const users = new Users();
   await users.buildIndices();
 
-  const accts = [walletAcct, "fees"];
+  const accts = ["", walletAcct, "fees"];
   const txns = new Transctions(dogenode, 5000, accts);
   await txns.buildIndices();
   txns.startRefresh();

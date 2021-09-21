@@ -115,13 +115,17 @@ const moveTxnSchema = new Schema({
     type: String,
     required: true,
   },
+  txnHash: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   otheraccount: {
     type: String,
     required: true,
   },
   time: {
     type: Number,
-    unique: true,
     required: true,
   },
   amount: {

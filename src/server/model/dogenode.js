@@ -104,7 +104,7 @@ module.exports = class DogeNode {
    * @param {String} acct the account to fetch records for
    * @param {Integer} count number of records to fetch
    * @param {Integer} from number of records to skip over
-   * @return {Promise} resolves with array of transaction IDs
+   * @return {Promise} resolves with array of transactions
    */
   queryTransactions(acct, count, from) {
     return new Promise((resolve, reject) => {
@@ -120,11 +120,12 @@ module.exports = class DogeNode {
   }
 
   /**
-   * Finds all transactions that the DogeNode has been apart of
+   * Finds all send and recv transactions that the DogeNode has been apart of.
+   * NOTE: does not return move transactions.
    * @return {Promise} resolves with an object containing all transactions and
    * related metadata OR rejects on error
    */
-  fetchAllTransactions() {
+  fetchAllSendRecvTransactions() {
     return new Promise((resolve, reject) => {
       // if "blockhash" arguement is not supplied to listsinceblock, then all
       // transactions are returned
@@ -139,7 +140,8 @@ module.exports = class DogeNode {
   }
 
   /**
-   * Fetchs an array of transactions that occurred after the specified blockhash
+   * Fetchs an array of send and recv transactions that occurred after the
+   * specified blockhash.
    * @param {String} blockHash The blockhash to fetch transactions relative to
    * @return {Promise} resolves with an object containing all transactions that
    * happened after blockHash and related metadata OR rejects on error

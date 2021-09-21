@@ -19,10 +19,13 @@ const example = async () => {
     console.log(`service fee: Ð${serviceFee}`);
 
     const accountName = process.env.DOGE_TELLER_NODE_ACCT;
-    const txns = await client.queryTransactions(accountName, 20, 0);
-    console.log("Most Recent Transaction: ");
-    txns.forEach((txn) => {
-      console.log(txn);
+    const defaultAcct = await client.queryTransactions("", 100, 0);
+    const acct = await client.queryTransactions(accountName, 100, 0);
+    const fees = await client.queryTransactions("fees", 100, 0);
+    const allTxn = defaultAcct.concat(acct).concat(fees);
+    console.log(`All transactions ordered by time (${allTxn.length}):`);
+    allTxn.sort((a, b) => a.time - b.time).forEach((txn) => {
+      console.log(`${txn.time}: ${txn.category},${txn.account},${txn.amount}`);
     });
 
     // NOTE: this might fail if you try to run npm run example more than once
