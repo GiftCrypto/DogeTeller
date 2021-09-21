@@ -41,7 +41,7 @@ async function main() {
   await users.buildIndices();
 
   const accts = ["", walletAcct, "fees"];
-  const txns = new Transctions(dogenode, 5000, accts);
+  const txns = new Transctions(dogenode, 10000, accts);
   await txns.buildIndices();
   txns.startRefresh();
 

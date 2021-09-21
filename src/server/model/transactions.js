@@ -31,6 +31,8 @@ module.exports = class Transactions extends EventEmitter {
     this.refreshInterval = refreshInterval;
     this.accounts = accounts;
 
+    // i.e. the last transaction this dogenode was apart of OR a recent
+    // block's blockhash if the dogenode has not been apart of any transactions
     this.latestSeenBlockHash = "";
   }
 
@@ -90,20 +92,42 @@ module.exports = class Transactions extends EventEmitter {
           const sendCount = await this.ffSendOrRecvTxn(send, this.SendTxnModel);
           const recvCount = await this.ffSendOrRecvTxn(recv, this.RecvTxnModel);
           const moveCount = await this.fastForwardMoveTxns(move);
-
-          // update with last send/recv block hash
-          this.latestSeenBlockHash = "what";
-
           const totalFfd = sendCount + recvCount + moveCount;
           console.log(`Complete: ${totalFfd} records fast-forwarded.`);
+
+          // update with last send/recv block hash
+          this.latestSeenBlockHash = this.updateLatestBlockHash(send, recv);
+          if (this.latestSeenBlockHash === "") {
+            throw new Error("Latest Blockhash should not be empty after ff!");
+          }
+
+          console.log(`latest blockhash after ff: ${this.latestSeenBlockHash}`);
         }
       } else {
         // fetch and save all recv transactions since latest block
-        console.log(`latest block hash: ${this.latestSeenBlockHash}`);
+        console.log(`latest blockhash: ${this.latestSeenBlockHash}`);
       }
     } catch (err) {
       console.log("Error occured during refresh:");
       console.log(err);
+    }
+  }
+
+  /**
+   * Finds the most recent blockhash for all of the "send" and "recv"
+   * transactions that this dogenode has been apart of. (Note "move" txns do not
+   * need to be searched since they contain no blockhash)
+   * @param {[Object]} send array containing info about "send" transactions
+   * @param {[Object]} recv array containing info about "recv" transactions
+   * @return {String} A string representing the latest blockhash
+   */
+  updateLatestBlockHash(send, recv) {
+    let txns = send.concat(recv);
+    if (txns.length > 0) {
+      txns = txns.sort((a, b) => a - b);
+      return txns[txns.length - 1].blockhash;
+    } else {
+      return "";
     }
   }
 
