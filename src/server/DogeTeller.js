@@ -43,7 +43,7 @@ async function main() {
   const accts = ["", walletAcct, "fees"];
   const txns = new Transctions(dogenode, 10000, accts);
   await txns.buildIndices();
-  txns.startRefresh();
+  await txns.startRefresh();
 
   // setup web server
   const app = express();

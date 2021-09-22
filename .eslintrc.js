@@ -17,9 +17,7 @@ module.exports = {
       "files": [
         "**/*.test.js",
       ],
-      "env": {
-        "jest": true,
-      },
     },
   ],
+  ignorePatterns: ["**/*.test.js"],
 };

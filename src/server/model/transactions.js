@@ -47,19 +47,23 @@ module.exports = class Transactions extends EventEmitter {
 
   /**
    * Invokes onRefresh for the first time
+   * @return {Promise} resolves with true on successful refresh
    */
-  startRefresh() {
-    this.onRefresh();
+  async startRefresh() {
+    return this.onRefresh();
   }
 
   /**
    * Invoked every $(this.refreshInterval) ms.
+   * @return {Promise} resolves with true on successful refresh
    */
   async onRefresh() {
     await this.update();
     setTimeout(() => {
       this.onRefresh();
     }, this.refreshInterval);
+
+    return true; // refresh succeeded
   }
 
   /**

@@ -8,7 +8,7 @@
     "start": "node ./src/server/DogeTeller.js",
     "start-dev": "nodemon --exec \"npm run lint -- --fix && node ./src/server/DogeTeller.js\"",
     "example": "node ./src/examples/examplerequests.js",
-    "test": "jest"
+    "test": "mocha --recursive --exit"
   },
   "keywords": [
     "dogecoin",
@@ -32,9 +32,11 @@
   "devDependencies": {
     "@babel/eslint-parser": "^7.15.0",
     "@babel/preset-env": "^7.15.0",
+    "chai": "^4.3.4",
     "eslint": "^7.32.0",
     "eslint-config-google": "^0.14.0",
-    "jest": "^27.0.6",
-    "nodemon": "^2.0.12"
+    "mocha": "^9.1.1",
+    "nodemon": "^2.0.12",
+    "sinon": "^11.1.2"
   }
 }
