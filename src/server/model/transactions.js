@@ -54,15 +54,21 @@ module.exports = class Transactions extends EventEmitter {
   }
 
   /**
-   * Invoked every $(this.refreshInterval) ms.
+   * Invoked every $(this.refreshInterval) ms. Schedules another refresh event
+   * if the previous refresh succeedded.
    * @return {Promise} resolves with true on successful refresh
    */
   async onRefresh() {
-    await this.update();
-    setTimeout(() => {
-      this.onRefresh();
-    }, this.refreshInterval);
-
+    try {
+      await this.update();
+      setTimeout(() => {
+        this.onRefresh();
+      }, this.refreshInterval);
+    } catch (err) {
+      console.log("Error occured during refresh:");
+      console.log(err);
+      return false; // refresh failed
+    }
     return true; // refresh succeeded
   }
 
@@ -70,50 +76,45 @@ module.exports = class Transactions extends EventEmitter {
    * Updates transaction records in the database.
    */
   async update() {
-    try {
-      if (this.latestSeenBlockHash === "") {
-        // compare DB records and DogeNode records to fast-forward the DB
-        console.log("Fast-forwarding transaction records in database...");
-        const td = await this.dogenode.fetchAllSendRecvTransactions();
-        if (td.transactions.length === 0) {
-          // no transactions have happened yet, so just update
-          // the latestSeenBlockHash with the last block on the blockchain.
-          this.latestSeenBlockHash = td.lastblock;
-          console.log("Complete: 0 records fast-forwarded.");
-        } else {
-          // insert all missing transactions into db and update latestSeenBH
-          const txns = await this.fetchEveryTransaction();
-          console.log(`All transactions: ${txns.length}`);
-
-          // filter each transaction by category
-          const send = txns.filter((txn) => txn.category === "send");
-          console.log(`send txns: ${send.length}`);
-          const recv = txns.filter((txn) => txn.category === "receive");
-          console.log(`recv txns: ${recv.length}`);
-          const move = txns.filter((txn) => txn.category === "move");
-          console.log(`move txns: ${move.length}`);
-
-          const sendCount = await this.ffSendOrRecvTxn(send, this.SendTxnModel);
-          const recvCount = await this.ffSendOrRecvTxn(recv, this.RecvTxnModel);
-          const moveCount = await this.fastForwardMoveTxns(move);
-          const totalFfd = sendCount + recvCount + moveCount;
-          console.log(`Complete: ${totalFfd} records fast-forwarded.`);
-
-          // update with last send/recv block hash
-          this.latestSeenBlockHash = this.updateLatestBlockHash(send, recv);
-          if (this.latestSeenBlockHash === "") {
-            throw new Error("Latest Blockhash should not be empty after ff!");
-          }
-
-          console.log(`latest blockhash after ff: ${this.latestSeenBlockHash}`);
-        }
+    if (this.latestSeenBlockHash === "") {
+      // compare DB records and DogeNode records to fast-forward the DB
+      console.log("Fast-forwarding transaction records in database...");
+      const td = await this.dogenode.fetchAllSendRecvTransactions();
+      if (td.transactions.length === 0) {
+        // no transactions have happened yet, so just update
+        // the latestSeenBlockHash with the last block on the blockchain.
+        this.latestSeenBlockHash = td.lastblock;
+        console.log("Complete: 0 records fast-forwarded.");
       } else {
-        // fetch and save all recv transactions since latest block
-        console.log(`latest blockhash: ${this.latestSeenBlockHash}`);
+        // insert all missing transactions into db and update latestSeenBH
+        const txns = await this.fetchEveryTransaction();
+        console.log(`All transactions: ${txns.length}`);
+
+        // filter each transaction by category
+        const send = txns.filter((txn) => txn.category === "send");
+        console.log(`send txns: ${send.length}`);
+        const recv = txns.filter((txn) => txn.category === "receive");
+        console.log(`recv txns: ${recv.length}`);
+        const move = txns.filter((txn) => txn.category === "move");
+        console.log(`move txns: ${move.length}`);
+
+        const sendCount = await this.ffSendOrRecvTxn(send, this.SendTxnModel);
+        const recvCount = await this.ffSendOrRecvTxn(recv, this.RecvTxnModel);
+        const moveCount = await this.fastForwardMoveTxns(move);
+        const totalFfd = sendCount + recvCount + moveCount;
+        console.log(`Complete: ${totalFfd} records fast-forwarded.`);
+
+        // update with last send/recv block hash
+        this.latestSeenBlockHash = this.updateLatestBlockHash(send, recv);
+        if (this.latestSeenBlockHash === "") {
+          throw new Error("Latest Blockhash should not be empty after ff!");
+        }
+
+        console.log(`latest blockhash after ff: ${this.latestSeenBlockHash}`);
       }
-    } catch (err) {
-      console.log("Error occured during refresh:");
-      console.log(err);
+    } else {
+      // fetch and save all recv transactions since latest block
+      console.log(`latest blockhash: ${this.latestSeenBlockHash}`);
     }
   }
 

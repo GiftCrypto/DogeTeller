@@ -26,6 +26,11 @@ describe("Tests transaction management and lifecycle", () => {
 
   beforeEach((done) => {
     mongoose.connect("mongodb://localhost:27018/doge-teller").then(() => {
+      const connection = mongoose.connection;
+      connection.dropCollection("sendtxns");
+      connection.dropCollection("recvtxns");
+      connection.dropCollection("movetxns");
+
       done();
     }).catch((err) => {
       console.log("failed to connect to database!");
@@ -36,8 +41,8 @@ describe("Tests transaction management and lifecycle", () => {
   it("fast-forwards all transactions when db is empty", async () => {
     const txn = new Transactions(dogenode, 10000, dummy_data_1_accts);
     await txn.buildIndices();
-
-    
+    const succeeded = await txn.startRefresh();
+    chai.assert.isTrue(succeeded);
   });
 
   it("fetches entire transaction history from dogenode", async () => {
