@@ -42,11 +42,14 @@ describe("Tests transaction management and lifecycle", () => {
   }
 
   beforeEach((done) => {
-    mongoose.connect("mongodb://localhost:27018/doge-teller").then(() => {
+    mongoose.connect("mongodb://localhost:27018/doge-teller").then(async () => {
       const connection = mongoose.connection;
-      connection.dropCollection("sendtxns");
-      connection.dropCollection("recvtxns");
-      connection.dropCollection("movetxns");
+      if (connection.collections.sendtxns)
+        await connection.collections.sendtxns.deleteMany({});
+      if (connection.collections.recvtxns)
+        await connection.collections.recvtxns.deleteMany({});
+      if (connection.collections.movetxns)
+        await connection.collections.movetxns.deleteMany({});
 
       sinon.restore();
 
@@ -55,6 +58,12 @@ describe("Tests transaction management and lifecycle", () => {
       console.log("failed to connect to database!");
       console.log(err);
     });
+  });
+
+  after(() => {
+    mongoose.connection.collections.sendtxns.drop();
+    mongoose.connection.collections.recvtxns.drop();
+    mongoose.connection.collections.movetxns.drop();
   });
 
   it("correctly fast-forwards even with no txn history", async () => {
@@ -124,7 +133,6 @@ describe("Tests transaction management and lifecycle", () => {
           txnId: currTxn.txid,
           blockHash: currTxn.blockhash,
         });
-        console.log(doc)
         await doc.save();
       } else {
         const doc = new txn.RecvTxnModel({
@@ -152,7 +160,6 @@ describe("Tests transaction management and lifecycle", () => {
 
     // verify number of documents in DB against documents from test data
     const sendTxnCnt = await txn.SendTxnModel.estimatedDocumentCount().count();
-    console.log(`send: ${sendTxnCnt}`);
     const expectedSendTxnCnt = dummy_data_1.transactions.filter((txn) => {
       return txn.category === "send";
     });
