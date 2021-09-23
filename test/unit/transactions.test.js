@@ -43,13 +43,9 @@ describe("Tests transaction management and lifecycle", () => {
 
   beforeEach((done) => {
     mongoose.connect("mongodb://localhost:27018/doge-teller").then(async () => {
-      const connection = mongoose.connection;
-      if (connection.collections.sendtxns)
-        await connection.collections.sendtxns.deleteMany({});
-      if (connection.collections.recvtxns)
-        await connection.collections.recvtxns.deleteMany({});
-      if (connection.collections.movetxns)
-        await connection.collections.movetxns.deleteMany({});
+      await mongoose.connection.collection("sendtxns").deleteMany({})
+      await mongoose.connection.collection("recvtxns").deleteMany({});
+      await mongoose.connection.collection("movetxns").deleteMany({});
 
       sinon.restore();
 
