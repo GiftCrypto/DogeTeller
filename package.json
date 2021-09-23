@@ -30,6 +30,7 @@
     "passport-headerapikey": "^1.2.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.15.5",
     "@babel/eslint-parser": "^7.15.0",
     "@babel/preset-env": "^7.15.0",
     "chai": "^4.3.4",
