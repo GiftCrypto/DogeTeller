@@ -8,7 +8,7 @@
     "start": "node ./src/server/DogeTeller.js",
     "start-dev": "nodemon --exec \"npm run lint -- --fix && node ./src/server/DogeTeller.js\"",
     "example": "node ./src/examples/examplerequests.js",
-    "test": "mocha --recursive --exit"
+    "test": "nyc mocha --recursive --exit"
   },
   "keywords": [
     "dogecoin",
@@ -38,6 +38,7 @@
     "eslint-config-google": "^0.14.0",
     "mocha": "^9.1.1",
     "nodemon": "^2.0.12",
+    "nyc": "^15.1.0",
     "sinon": "^11.1.2"
   }
 }
