@@ -1,5 +1,6 @@
 {
   "accounts": ["_", "doge-node-test", "fees"],
+  "lastblock": "7725bd9880002c414b03049fbfde37a0f99846f1d5f4308fe4ede823959dc855",
   "transactions": [
     {"account":"doge-node-test","address":"DTEBCSBgtEi159PzSUjUEYWx1xk1mfRsKJ","category":"receive","amount":4.54959054,"label":"doge-node-test","vout":0,"confirmations":102295,"blockhash":"55fae7cf15d11f4a3c6d129d203c2958fbe3b39c59d7a12055f630e0e176ce79","blockindex":9,"blocktime":1625874264,"txid":"0edd74b84a7d4ac103dae2f23e49ef3f7f17485d01b405baba1fa32c503b82e6","walletconflicts":[],"time":1625874259,"timereceived":1625874259,"bip125-replaceable":"no"},
     {"account":"_","address":"DSvBGdbTVpUjXg1jVYzjPzrkkG7JBEHFLK","category":"send","amount":-2,"vout":0,"fee":-1,"confirmations":99404,"blockhash":"4b98c8cc1e46bcb1317d55e887e89435fd66b26137767c86a3d909272753720f","blockindex":25,"blocktime":1626057786,"txid":"94da5acbebf0075882d164227f3ee17b4ff48d92b11bcce4512f1d87b8c0dd52","walletconflicts":[],"time":1626057681,"timereceived":1626057681,"bip125-replaceable":"no","abandoned":false},
