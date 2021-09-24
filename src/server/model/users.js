@@ -36,4 +36,18 @@ module.exports = class Users {
     });
     await newUser.save();
   }
+
+  /**
+   * Validates that a user with the supplied credentials exists
+   * @param {String} email email for the user to validate
+   * @param {String} password password to chek against hash store for user
+   */
+  async validateUserCredentials(email, password) {
+    const user = await this.UserModel.findOne({email}).exec();
+    if (!user) {
+      return false;
+    }
+    const res = await bcrypt.compare(password, user.passwordHash);
+    return res;
+  }
 };

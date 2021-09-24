@@ -2,7 +2,8 @@ const DogeNode = require("./model/dogenode");
 const express = require("express");
 const cors = require("cors");
 const passport = require("passport");
-const APIKeyStrat = require("passport-headerapikey").HeaderAPIKeyStrategy;
+const APIKeyStrategy = require("passport-headerapikey").HeaderAPIKeyStrategy;
+const LocalStrategy = require("passport-local").Strategy;
 const Validator = require("jsonschema").Validator;
 const mongoose = require("mongoose");
 const {dogeNodeSchema} = require("./model/schemas");
@@ -49,7 +50,9 @@ async function main() {
   const app = express();
   const port = 5000;
   app.use(cors());
-  passport.use(new APIKeyStrat(
+
+  // setup authentication strategies
+  passport.use(new APIKeyStrategy(
       {header: "Authorization", prefix: "Api-Key "},
       false,
       async (apikey, done) => {
@@ -68,6 +71,18 @@ async function main() {
         }
       }
   ));
+
+  passport.use(new LocalStrategy(
+      async (username, password, done) => {
+        try {
+          const res = await users.validateUserCredentials(username, password);
+          done(null, res);
+        } catch (err) {
+          done(err);
+        }
+      }
+  ));
+
   app.use(passport.initialize());
   // api rate limiter to prevent api abuse
   const apiLimiter = rateLimit({
