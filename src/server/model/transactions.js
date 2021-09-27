@@ -17,10 +17,9 @@ module.exports = class Transactions extends EventEmitter {
    * transactions
    * @param {Number} refreshInterval Determines how often new transactions are
    * saved to the DB
-   * @param {[String]} accounts Wallet accounts to monitor
    * @constructor
    */
-  constructor(dogenode, refreshInterval, accounts) {
+  constructor(dogenode, refreshInterval) {
     super();
 
     this.SendTxnModel = mongoose.model("SendTxn", sendTxnSchema);
@@ -29,7 +28,6 @@ module.exports = class Transactions extends EventEmitter {
 
     this.dogenode = dogenode;
     this.refreshInterval = refreshInterval;
-    this.accounts = accounts;
 
     // i.e. the last transaction this dogenode was apart of OR a recent
     // block's blockhash if the dogenode has not been apart of any transactions
@@ -222,8 +220,12 @@ module.exports = class Transactions extends EventEmitter {
    */
   async fetchEveryTransaction() {
     let txns = [];
-    for (let i = 0; i < this.accounts.length; i++) {
-      const newTxns = await this.fetchEveryAcctTransaction(this.accounts[i]);
+    const accts = Object.entries(await this.dogenode.listAccounts()).map(
+        (entry) => {
+          return entry[0];
+        });
+    for (let i = 0; i < accts.length; i++) {
+      const newTxns = await this.fetchEveryAcctTransaction(accts[i]);
       txns = txns.concat(newTxns);
     }
     return txns;

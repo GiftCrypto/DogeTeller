@@ -38,14 +38,8 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
-  address: {
+  account: {
     type: String,
-    requried: true,
-  },
-  balance: {
-    type: Number,
-    default: 0,
-    required: true,
   },
   registered: {
     type: Boolean,

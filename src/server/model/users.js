@@ -8,10 +8,13 @@ const {userSchema} = require("./schemas");
 module.exports = class Users {
   /**
    * Constructor
+   * @param {DogeNode} dogenode used to generate accounts/addresses for the user
    * @constructor
    */
-  constructor() {
+  constructor(dogenode) {
     this.UserModel = mongoose.model("User", userSchema);
+
+    this.dogenode = dogenode;
   }
 
   /**
@@ -25,16 +28,21 @@ module.exports = class Users {
    * Registers a new user account.
    * @param {String} email email to associate with new account
    * @param {String} password plain-text password
-   * @param {String} address wallet address to associate with the user
    */
-  async registerUser(email, password, address) {
+  async register(email, password) {
     const passwordHash = await bcrypt.hash(password, 10);
     const newUser = new this.UserModel({
       email,
       passwordHash,
-      address,
     });
     await newUser.save();
+
+    // associate an account on the dogenode instance with the user account
+    const account = Buffer.from(email).toString("base64");
+    await this.dogenode.getNewAddress(account);
+    await newUser.updateOne({
+      account,
+    });
   }
 
   /**
@@ -49,5 +57,13 @@ module.exports = class Users {
     }
     const res = await bcrypt.compare(password, user.passwordHash);
     return res;
+  }
+
+  /**
+   * Gets a public wallet address the user can use to fund the account
+   * @param {UserModel} user the user to get the receiving address for.
+   */
+  async getReceivingAddress(user) {
+    console.log(user);
   }
 };

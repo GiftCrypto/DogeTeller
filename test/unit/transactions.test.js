@@ -34,6 +34,15 @@ describe("Tests transaction management and lifecycle", () => {
     }
   }
 
+  const fakeAccounts = () => {
+    let accountMap = {};
+    for (let i = 0; i < dummy_data_1.accounts.length; i++) {
+      let entry = dummy_data_1.accounts[i];
+      accountMap[entry] = 0; // NOTE: balances are all zero
+    }
+    return accountMap;
+  }
+
   const fakeEmptySendRecvHistory = () => {
     return {
       transactions: [],
@@ -89,6 +98,7 @@ describe("Tests transaction management and lifecycle", () => {
     const fake = sinon.fake(fakeSendRecvHistory);
     sinon.replace(dogenode, "fetchAllSendRecvTransactions", fake);
     sinon.replace(dogenode, "queryTransactions", sinon.fake(fakeTxnHistory));
+    sinon.replace(dogenode, "listAccounts", sinon.fake(fakeAccounts));
 
     const succeeded = await txn.startRefresh();
     chai.assert.isTrue(succeeded);
@@ -150,6 +160,7 @@ describe("Tests transaction management and lifecycle", () => {
     const fake = sinon.fake(fakeSendRecvHistory);
     sinon.replace(dogenode, "fetchAllSendRecvTransactions", fake);
     sinon.replace(dogenode, "queryTransactions", sinon.fake(fakeTxnHistory));
+    sinon.replace(dogenode, "listAccounts", sinon.fake(fakeAccounts));
 
     const succeeded = await txn.startRefresh();
     chai.assert.isTrue(succeeded);
@@ -178,12 +189,14 @@ describe("Tests transaction management and lifecycle", () => {
     await txn.buildIndices();
 
     sinon.replace(dogenode, "queryTransactions", sinon.fake(fakeTxnHistory));
+    sinon.replace(dogenode, "listAccounts", sinon.fake(fakeAccounts));
     let fetched = await txn.fetchEveryTransaction();
     chai.assert.equal(fetched.length, dummy_data_1.transactions.length);
 
     sinon.restore();
 
     sinon.replace(dogenode, "queryTransactions", sinon.fake(emptyTxnHistory));
+    sinon.replace(dogenode, "listAccounts", sinon.fake(fakeAccounts));
     fetched = await txn.fetchEveryTransaction();
     chai.assert.equal(fetched.length, 0);
   });

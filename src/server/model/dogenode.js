@@ -157,4 +157,20 @@ module.exports = class DogeNode {
       });
     });
   }
+
+  /**
+   * @return {Promise} resolves with an array containing a key/value map of
+   * account names with each respective balance OR rejects on error.
+   */
+  listAccounts() {
+    return new Promise((resolve, reject) => {
+      this.dogecoin.exec("listaccounts", (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+  }
 };

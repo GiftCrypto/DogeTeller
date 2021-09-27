@@ -31,8 +31,10 @@ const example = async () => {
     // NOTE: this might fail if you try to run npm run example more than once
     // without changing the email address value. it fails because each user must
     // have a unique email address.
-    const success = await client.registerUser("test@example.com", "abc123");
-    console.log(`registered user?: ${success}`);
+    // const success = await client.registerUser("test8@example.com", "abc123");
+    // console.log(`registered user?: ${success}`);
+
+    await client.getUserReceivingAddress("test8@example.com", "abc123");
   } catch (error) {
     console.log(error);
   }

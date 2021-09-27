@@ -38,11 +38,10 @@ async function main() {
   const v = new Validator();
 
   // create and register data model managers
-  const users = new Users();
+  const users = new Users(dogenode);
   await users.buildIndices();
 
-  const accts = ["", walletAcct, "fees"];
-  const txns = new Transctions(dogenode, 10000, accts);
+  const txns = new Transctions(dogenode, 10000);
   await txns.buildIndices();
   await txns.startRefresh();
 
@@ -72,15 +71,18 @@ async function main() {
       }
   ));
 
-  passport.use(new LocalStrategy(
-      async (username, password, done) => {
-        try {
-          const res = await users.validateUserCredentials(username, password);
-          done(null, res);
-        } catch (err) {
-          done(err);
-        }
-      }
+  passport.use(new LocalStrategy({
+    usernameField: "username",
+    passwordField: "password",
+  },
+  async (username, password, done) => {
+    try {
+      const res = await users.validateUserCredentials(username, password);
+      done(null, res);
+    } catch (err) {
+      done(err);
+    }
+  }
   ));
 
   app.use(passport.initialize());
@@ -250,8 +252,7 @@ async function main() {
           });
         } else {
           try {
-            const address = await dogenode.getNewAddress(walletAcct);
-            await users.registerUser(params.email, params.password, address);
+            await users.register(params.email, params.password);
             res.json({
               success: true,
             });
@@ -262,6 +263,19 @@ async function main() {
             });
           }
         }
+      }
+  );
+
+  app.get("/api/private/getReceivingAddress",
+      passport.authenticate("local", {
+        usernameField: "username",
+        passwordField: "password",
+        session: false,
+      }),
+      async (req, res) => {
+        res.json({
+          success: true,
+        });
       }
   );
 

@@ -204,4 +204,40 @@ module.exports = class DogeTellerClient {
       }
     }
   }
+
+  /**
+   * Returns a public wallet address the user can use to fund their account with
+   * @param {String} email user's email address
+   * @param {String} password user's password
+   */
+  async getUserReceivingAddress(email, password) {
+    /* eslint-disable */
+    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    /* eslint-enable */
+    const validEmail = re.test(String(email).toLowerCase());
+    if (!validEmail) {
+      throw new Error(errorMessages.BAD_ARGS);
+    }
+    const params = {
+      email,
+      password,
+    };
+    const validation = this.v.validate(params, registerUserSchema);
+    if (!validation.valid) {
+      throw new Error(errorMessages.BAD_ARGS);
+    } else {
+      try {
+        const res = await this.instance("/api/private/getReceivingAddress",
+            {
+              username: params.email,
+              password: params.password,
+            });
+        return new Promise((resolve) => {
+          resolve(res.data.success);
+        });
+      } catch (networkError) {
+        throw this.convertRequestError(networkError);
+      }
+    }
+  }
 };
