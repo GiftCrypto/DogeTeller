@@ -10,38 +10,41 @@ const users = require("./routes/users");
 const UserModel = mongoose.model("User", userSchema);
 
 passport.use(new LocalStrategy(
-  async (username, password, done) => {
-    try {
-      const user = await UserModel.findOne({email: username}).exec();
-      if (!user) {
-        return done(null, false)
-      } else {
-        const res = await bcrypt.compare(password, user.passwordHash);
-        return done(null, res);
+    async (username, password, done) => {
+      try {
+        const user = await UserModel.findOne({email: username}).exec();
+        if (!user) {
+          return done(null, false);
+        } else {
+          const res = await bcrypt.compare(password, user.passwordHash);
+          if (res) {
+            return done(null, username);
+          }
+          return done(null, false);
+        }
+      } catch (err) {
+        done(err);
       }
-    } catch(err) {
-      done(err);
     }
-  }
 ));
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({extended: false}));
 app.use(passport.initialize());
 const port = 5000;
 
 // register API routes
 app.use("/users", users);
 
-mongoose.connect("mongodb://localhost:27018/tipdoge");
+mongoose.connect("mongodb://localhost:27017/tipdoge");
 const db = mongoose.connection;
 
 db.on("error", (err) => {
   console.error(err);
   console.log("Failed to connect to database!");
-})
+});
 
 db.on("open", () => {
   app.listen(port, () => {

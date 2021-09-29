@@ -41,6 +41,9 @@ const userSchema = new Schema({
   account: {
     type: String,
   },
+  registrationSecret: {
+    type: String,
+  },
   registered: {
     type: Boolean,
     default: false,

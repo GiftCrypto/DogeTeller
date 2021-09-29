@@ -3,10 +3,12 @@ const passport = require("passport");
 const mongoose = require("mongoose");
 const Validator = require("jsonschema").Validator;
 const bcrypt = require("bcrypt");
+const uuid = require("uuid");
 const {userSchema} = require("../model/schemas");
 const {registerUserSchema} = require("../../common/Schemas");
 const errorMessages = require("./errorMessages");
 
+// eslint-disable-next-line new-cap
 const router = express.Router();
 
 const UserModel = mongoose.model("User", userSchema);
@@ -17,12 +19,12 @@ router.post("/login",
     passport.authenticate("local", {session: false}),
     (req, res) => {
       res.json({
-        msg: "hello"
+        msg: `Hello, ${req.user}!`,
       });
     }
 );
 
-router.post("/register", 
+router.post("/register",
     async (req, res) => {
       const params = {
         email: req.body.email,
@@ -42,6 +44,7 @@ router.post("/register",
         const user = new UserModel({
           email: params.email,
           passwordHash,
+          registrationSecret: uuid.v4(),
         });
         try {
           const saved = await user.save();
@@ -49,7 +52,7 @@ router.post("/register",
             success: saved ? true : false,
           });
         } catch (error) {
-          // errors with code 11000 can be ignored
+          // errors with code 11000 (duplicate entry) can be ignored
           if (error.code !== 11000) {
             console.error(error);
           }
